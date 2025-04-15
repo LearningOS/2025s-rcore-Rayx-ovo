@@ -15,6 +15,7 @@ mod switch;
 mod task;
 
 use crate::config::MAX_APP_NUM;
+use crate::config::MAX_SYSCALL_NUM;
 use crate::loader::{get_num_app, init_app_cx};
 use crate::sync::UPSafeCell;
 use lazy_static::*;
@@ -37,6 +38,8 @@ pub struct TaskManager {
     num_app: usize,
     /// use inner value to get mutable access
     inner: UPSafeCell<TaskManagerInner>,
+
+
 }
 
 /// Inner of Task Manager
@@ -54,10 +57,14 @@ lazy_static! {
         let mut tasks = [TaskControlBlock {
             task_cx: TaskContext::zero_init(),
             task_status: TaskStatus::UnInit,
+            t_s:[0;MAX_SYSCALL_NUM],
+
+
         }; MAX_APP_NUM];
         for (i, task) in tasks.iter_mut().enumerate() {
             task.task_cx = TaskContext::goto_restore(init_app_cx(i));
             task.task_status = TaskStatus::Ready;
+            task.t_s = [0;MAX_SYSCALL_NUM];
         }
         TaskManager {
             num_app,
@@ -67,6 +74,7 @@ lazy_static! {
                     current_task: 0,
                 })
             },
+
         }
     };
 }
@@ -134,7 +142,22 @@ impl TaskManager {
         } else {
             panic!("All applications completed!");
         }
+        
     }
+
+    fn ts(&self,id:usize){
+        let mut  current = self.inner.exclusive_access();
+        let x = current.current_task;
+        current.tasks[x].t_s[id/2] += 1;
+
+    }
+
+    fn rt(&self,id:usize) -> isize {
+        let current = self.inner.exclusive_access();
+        let x = current.current_task;
+        current.tasks[x].t_s[id/2] as isize
+    }
+
 }
 
 /// Run the first task in task list.
@@ -168,4 +191,12 @@ pub fn suspend_current_and_run_next() {
 pub fn exit_current_and_run_next() {
     mark_current_exited();
     run_next_task();
+}
+///test
+pub fn tst(id:usize){
+    TASK_MANAGER.ts(id);
+}
+/// test return
+pub fn rtt(id:usize) ->isize{
+    TASK_MANAGER.rt(id)
 }
