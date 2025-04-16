@@ -148,14 +148,14 @@ impl TaskManager {
     fn ts(&self,id:usize){
         let mut  current = self.inner.exclusive_access();
         let x = current.current_task;
-        current.tasks[x].t_s[id/2] += 1;
+        current.tasks[x].t_s[id] += 1;
 
     }
 
     fn rt(&self,id:usize) -> isize {
         let current = self.inner.exclusive_access();
         let x = current.current_task;
-        current.tasks[x].t_s[id/2] as isize
+        current.tasks[x].t_s[id] as isize
     }
 
 }
